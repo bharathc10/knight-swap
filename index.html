@@ -1,8 +1,490 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset='utf-8'><title>Knight Puzzle</title></head>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knight Puzzle Solver</title>
+    <style>
+        :root {
+            --color-background: #1a1a1a;
+            --color-surface: #2d2d2d;
+            --color-text: #f5f5f5;
+            --color-border: #4a4a4a;
+            --color-primary: #32b8c6;
+            --color-square-light: #f0d9b5;
+            --color-square-dark: #b58863;
+            --color-highlight: rgba(50, 184, 198, 0.4);
+            --color-valid-move: rgba(50, 184, 198, 0.6);
+        }
+
+        /* Page layout */
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--color-background);
+            color: var(--color-text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 760px;
+            padding: 0 12px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+
+        .instructions {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 18px;
+            line-height: 1.4em;
+        }
+
+        /* MAIN BOARD container - now fits content exactly and is centered */
+        .board-container {
+            background: var(--color-surface);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+            margin: 0 auto 26px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: fit-content; /* ensure container hugs the board */
+        }
+
+        .board-container h3 {
+            text-align: center;
+            margin: 0 0 12px;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        /* MAIN BOARD size: 90x90 squares (option A) */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, 90px);
+            grid-template-rows: repeat(4, 90px);
+            gap: 0;
+        }
+
+        /* Bottom small boards area */
+        .bottom-boards {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .small-board-box {
+            background: var(--color-surface);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            width: 176px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        }
+
+        .small-board-box h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .reference-board {
+            display: grid;
+            grid-template-columns: repeat(4, 40px);
+            grid-template-rows: repeat(4, 40px);
+            gap: 0;
+            margin: 8px auto 0 auto;
+        }
+
+        /* Squares */
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--color-border);
+            position: relative;
+            font-size: 48px;
+            cursor: pointer;
+            user-select: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .reference-board .square {
+            font-size: 26px;
+            cursor: default;
+        }
+
+        .light { background: var(--color-square-light); }
+        .dark  { background: var(--color-square-dark); }
+        .disabled { background: var(--color-background); border-color: transparent; cursor: default; }
+
+        .selected {
+            background: var(--color-highlight) !important;
+            box-shadow: inset 0 0 0 3px var(--color-primary);
+        }
+
+        .valid-move::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: var(--color-valid-move);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* thicker outline for unicode knight symbol */
+        .knight {
+            -webkit-text-stroke: 3px currentColor;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        /* Controls */
+        .controls {
+            text-align: center;
+            margin-top: 12px;
+            margin-bottom: 6px;
+        }
+
+        .btn {
+            background: var(--color-primary);
+            color: #0b1112;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            margin: 6px;
+        }
+
+        .status {
+            text-align: center;
+            color: #999;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        /* Popup */
+        #solvedPopup {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+        }
+        #solvedPopup.active { visibility: visible; }
+
+        #popupBox {
+            background: var(--color-surface);
+            color: var(--color-text);
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+
+        a.video-link {
+            display: block;
+            margin-top: 14px;
+            text-align: center;
+            color: var(--color-primary);
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 520px) {
+            .board { grid-template-columns: repeat(4, 68px); grid-template-rows: repeat(4, 68px); }
+            .small-board-box { width: 140px; }
+            .reference-board { grid-template-columns: repeat(4, 34px); grid-template-rows: repeat(4, 34px); }
+            .square { font-size: 36px; }
+            .reference-board .square { font-size: 20px; }
+        }
+    </style>
+</head>
 <body>
-<!-- Replace this placeholder with your full working Knight Puzzle HTML -->
-<p>Your full Knight Puzzle HTML goes here.</p>
+    <div class="container">
+        <h1>🐴 Knight Puzzle Solver</h1>
+
+        <div class="instructions">
+            <strong>Goal:</strong> Swap the white knights with the black knights.<br>
+            Knights move in an L-shape: two squares in one direction, one perpendicular.<br>
+            Click a knight to select it, then click a highlighted square to move.
+        </div>
+
+        <!-- MAIN BOARD -->
+        <div class="board-container" aria-label="Current board container">
+            <h3>Current Board</h3>
+            <div id="board" class="board" role="grid" aria-label="Current board"></div>
+        </div>
+
+        <!-- small reference boards below -->
+        <div class="bottom-boards" aria-hidden="false">
+            <div class="small-board-box">
+                <h3>Starting Position</h3>
+                <div id="referenceBoard" class="reference-board" role="grid"></div>
+            </div>
+
+            <div class="small-board-box">
+                <h3>Solved Position</h3>
+                <div id="solvedBoard" class="reference-board" role="grid"></div>
+            </div>
+        </div>
+
+        <!-- controls -->
+        <div class="controls">
+            <button class="btn" onclick="resetBoard()">Reset</button>
+            <button class="btn" onclick="undoMove()">Undo</button>
+        </div>
+
+        <div class="status">Moves: <span id="moveCount">0</span></div>
+
+        <a href="https://www.youtube.com/watch?v=_N74FKyE29Y" target="_blank" class="video-link" rel="noopener noreferrer">
+            🔗 Puzzle inspired by this Mind Your Decisions video
+        </a>
+    </div>
+
+    <!-- solved popup -->
+    <div id="solvedPopup" role="dialog" aria-modal="true" aria-hidden="true">
+        <div id="popupBox">
+            <h2>🎉 Solved!</h2>
+            <p>The knights have successfully swapped.</p>
+            <div style="margin-top:12px;">
+                <button class="btn" onclick="closePopup()">OK</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* ---------------------
+   BOARD SETUP
+---------------------- */
+const boardLayout = [
+    [0,1,0,0],
+    [0,1,1,0],
+    [0,1,1,1],
+    [1,1,1,1]
+];
+
+const initialPositions = [
+    [0,1],[2,2],   // white
+    [3,0],[3,2]    // black
+];
+
+const solvedPositions = [
+    [3,0],[3,2],
+    [0,1],[2,2]
+];
+
+let knights = JSON.parse(JSON.stringify(initialPositions));
+let moveHistory = [];
+let selectedKnight = null;
+let moveCount = 0;
+let solved = false;
+
+const knightMoves = [
+    [-2,-1],[-2,1],[-1,-2],[-1,2],
+    [1,-2],[1,2],[2,-1],[2,1]
+];
+
+/* ---------------------
+   INITIALIZE BOARDS
+---------------------- */
+function createSquares(boardId){
+    const el = document.getElementById(boardId);
+    el.innerHTML = "";
+    for(let r=0;r<4;r++){
+        for(let c=0;c<4;c++){
+            const sq=document.createElement("div");
+            sq.classList.add("square");
+            sq.dataset.row=r;
+            sq.dataset.col=c;
+
+            if(boardLayout[r][c]===0) sq.classList.add("disabled");
+            else sq.classList.add((r+c)%2===0?"light":"dark");
+
+            if(boardId==="board" && boardLayout[r][c]===1){
+                sq.onclick=()=>handleSquareClick(r,c);
+            }
+            el.appendChild(sq);
+        }
+    }
+}
+
+createSquares("board");
+createSquares("referenceBoard");
+createSquares("solvedBoard");
+
+function placeReferenceBoards() {
+    // starting
+    initialPositions.forEach((pos, idx) => {
+        const [r, c] = pos;
+        const target = document.querySelector(`#referenceBoard [data-row="${r}"][data-col="${c}"]`);
+        if (target) target.innerHTML = `<span class="knight" style="color:${idx < 2 ? 'white' : 'black'}">♘</span>`;
+    });
+    // solved
+    solvedPositions.forEach((pos, idx) => {
+        const [r, c] = pos;
+        const target = document.querySelector(`#solvedBoard [data-row="${r}"][data-col="${c}"]`);
+        if (target) target.innerHTML = `<span class="knight" style="color:${idx < 2 ? 'white' : 'black'}">♘</span>`;
+    });
+}
+
+placeReferenceBoards();
+
+/* ---------------------
+   RENDER MAIN BOARD
+---------------------- */
+function renderKnights() {
+    document.querySelectorAll('#board .square').forEach(sq => {
+        sq.innerHTML = '';
+        sq.classList.remove('selected', 'valid-move');
+    });
+
+    knights.forEach((pos, idx) => {
+        const [r, c] = pos;
+        const square = document.querySelector(`#board [data-row="${r}"][data-col="${c}"]`);
+        if (square) {
+            square.innerHTML = `<span class="knight" style="color:${idx < 2 ? 'white' : 'black'}">♘</span>`;
+        }
+    });
+
+    if (selectedKnight !== null) {
+        const [r, c] = knights[selectedKnight];
+        const sel = document.querySelector(`#board [data-row="${r}"][data-col="${c}"]`);
+        if (sel) sel.classList.add('selected');
+        showValidMoves(r, c);
+    }
+
+    document.getElementById('moveCount').textContent = moveCount;
+
+    // check solved after rendering (order-agnostic for same-color knights)
+    checkSolved();
+}
+
+renderKnights();
+
+/* ---------------------
+   MOVE HANDLING
+---------------------- */
+function handleSquareClick(row, col) {
+    if (solved) return;
+    const knightIdx = knights.findIndex(([r, c]) => r === row && c === col);
+    if (knightIdx !== -1) {
+        selectedKnight = knightIdx;
+        renderKnights();
+        return;
+    }
+
+    if (selectedKnight !== null) {
+        if (isValidMove(selectedKnight, row, col)) {
+            moveHistory.push(JSON.parse(JSON.stringify(knights)));
+            knights[selectedKnight] = [row, col];
+            moveCount++;
+            selectedKnight = null;
+            renderKnights();
+        } else {
+            selectedKnight = null;
+            renderKnights();
+        }
+    }
+}
+
+function isValidMove(knightIdx, targetRow, targetCol) {
+    const [cr, cc] = knights[knightIdx];
+    const rowDiff = targetRow - cr;
+    const colDiff = targetCol - cc;
+    const isKnightMove = knightMoves.some(([dr, dc]) => dr === rowDiff && dc === colDiff);
+    if (!isKnightMove) return false;
+    if (boardLayout[targetRow][targetCol] === 0) return false;
+    const occupied = knights.some(([r, c]) => r === targetRow && c === targetCol);
+    return !occupied;
+}
+
+function showValidMoves(row, col) {
+    knightMoves.forEach(([dr, dc]) => {
+        const nr = row + dr, nc = col + dc;
+        if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
+            if (isValidMove(selectedKnight, nr, nc)) {
+                const s = document.querySelector(`#board [data-row="${nr}"][data-col="${nc}"]`);
+                if (s) s.classList.add('valid-move');
+            }
+        }
+    });
+}
+
+/* ---------------------
+   UNDO / RESET
+---------------------- */
+function resetBoard() {
+    knights = JSON.parse(JSON.stringify(initialPositions));
+    selectedKnight = null;
+    moveHistory = [];
+    moveCount = 0;
+    solved = false;
+    document.getElementById('solvedPopup').classList.remove('active');
+    renderKnights();
+}
+
+function undoMove() {
+    if (moveHistory.length > 0 && !solved) {
+        knights = moveHistory.pop();
+        moveCount = Math.max(0, moveCount - 1);
+        selectedKnight = null;
+        renderKnights();
+    }
+}
+
+/* ---------------------
+   SOLVED CHECK (order-agnostic for each color)
+---------------------- */
+function positionsSetEquals(a, b) {
+    // a and b are arrays of [r,c] positions; compare as sets of "r,c"
+    const sa = a.map(p => `${p[0]},${p[1]}`).sort();
+    const sb = b.map(p => `${p[0]},${p[1]}`).sort();
+    if (sa.length !== sb.length) return false;
+    for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return false;
+    return true;
+}
+
+function checkSolved() {
+    // white indices: 0 and 1 in knights should match solvedPositions[0..1] as a set
+    // black indices: 2 and 3 should match solvedPositions[2..3] as a set
+    const whitesCurrent = knights.slice(0,2);
+    const blacksCurrent = knights.slice(2,4);
+    const whitesTarget = solvedPositions.slice(0,2);
+    const blacksTarget = solvedPositions.slice(2,4);
+
+    if (positionsSetEquals(whitesCurrent, whitesTarget) && positionsSetEquals(blacksCurrent, blacksTarget)) {
+        solved = true;
+        const popup = document.getElementById('solvedPopup');
+        popup.classList.add('active');
+        popup.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function closePopup() {
+    const popup = document.getElementById('solvedPopup');
+    popup.classList.remove('active');
+    popup.setAttribute('aria-hidden', 'true');
+}
+</script>
 </body>
 </html>
