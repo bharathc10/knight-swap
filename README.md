@@ -1,32 +1,28 @@
 # Knight Swap Puzzle
 
-This is a simple interactive version of the classic **Knight Swap Puzzle**, inspired by the Mind Your Decisions YouTube channel.
+### ▶️ Play the Puzzle in Your Browser  
+https://bharathc10.github.io/knight-swap/
 
-## 🎯 Motive / Purpose
-I wanted to *try and play the puzzle first* rather than solve it on paper, so I built this digital version with help from AI.  
-It lets you:
-- Click and move knights.
-- View the starting and solved positions.
-- Undo and reset moves.
-- Automatically detect when the puzzle is solved.
+---
 
-## 🎥 Original Video Inspiration
-Puzzle link: https://www.youtube.com/watch?v=_N74FKyE29Y  
-Credit: **Mind Your Decisions** (Presh Talwalkar)
+This is a simple interactive version of the classic Knight Swap Puzzle, inspired by the Mind Your Decisions YouTube channel.
 
-## 📁 Repo Contents
-```
-index.html     - Full standalone puzzle (HTML + CSS + JS)
-README.md      - Documentation & motivation
-```
+## 🎯 Purpose
+I wanted to try the puzzle digitally instead of using pen and paper, so I built this version with the help of AI.
 
-## ✔ How to Use
-Just open `index.html` in any browser:
-- Desktop
-- Mobile
-- RStudio Viewer (works)
-- VS Code / PyCharm / any editor
+You can:
+- Move knights by clicking
+- See valid moves highlighted
+- View starting & solved positions
+- Undo / reset moves
+- Automatically detect puzzle completion
 
-No external dependencies. Everything is inside one HTML file.
+## 🎥 Original Puzzle Video  
+https://www.youtube.com/watch?v=_N74FKyE29Y  
 
-Enjoy the puzzle!
+Credit: **Mind Your Decisions / Presh Talwalkar**
+
+---
+
+To play or share the puzzle, just open:  
+**https://bharathc10.github.io/knight-swap/**
